@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>untukmu cantik</title>
+    <link rel="shortcut icon" href="heart.png" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+<script>
+    let flowers = [];
+    let bloomSpeed = 0.02;
+    let textDisplayed = false;
+    let typingText = "Hai Alvinaaa, makasih ya sudah ada di hidup iniii, sehat sehat terus yaaa, makannya dijagaaa jangan sampe telattt, jangan lupa ibadahhh, jangan lupa istirahat jugaaa, doaku selalu bersamamu, i love uuu ";
+    let displayedText = "";
+    let typingIndex = 0;
+    let typingSpeed =2;  // Lower value means faster typing
+    let typingFrame = 0;
+    let maxWidth = 280;
+    let hearts = [];
+    let heartCount = 20;
+    let heartsGenerated = false;
+    let heartImg;
+
+    function preload() {
+        heartImg = loadImage('heart.png');  // Load the heart image
+    }
+
+    function setup() {
+        createCanvas(windowWidth, windowHeight);
+        angleMode(DEGREES);
+        textFont('Poppins');
+
+        // Create multiple flowers
+        let cols = 4;
+        let rows = 3;
+        let cellWidth = width / cols;
+        let cellHeight = height / rows;
+
+        for (let i = 0; i < cols; i++) {
+            for (let j = 0; j < rows; j++) {
+                let x = i * cellWidth + random(cellWidth * 0.2, cellWidth * 0.8);
+                let y = j * cellHeight + random(cellHeight * 0.2, cellHeight * 0.8);
+                let petalCount = 15;
+                let petalLength = 40;
+                let petalWidth = petalLength / 2;
+                flowers.push(new Flower(x, y, petalCount, petalLength, petalWidth));
+            }
+        }
+    }
+
+    function draw() {
+        background(255, 184, 191);
+
+        for (let flower of flowers) {
+            flower.draw();
+            flower.updateBloom();
+        }
+
+        if (flowers.every(f => f.bloomFactor >= 1) && !textDisplayed) {
+            textDisplayed = true;
+        }
+
+        if (textDisplayed) {
+            displayText();
+        }
+
+        if (textDisplayed && !heartsGenerated) {
+            for (let i = 0; i < heartCount; i++) {
+                hearts.push(new Heart(random(width), height + random(100, 200), random(1, 3)));
+            }
+            heartsGenerated = true;
+        }
+
+        for (let heart of hearts) {
+            heart.update();
+            heart.show();
+        }
+    }
+
+    class Flower {
+        constructor(x, y, petalCount, petalLength, petalWidth) {
+            this.x = x;
+            this.y = y;
+            this.petalCount = petalCount;
+            this.petalLength = petalLength;
+            this.petalWidth = petalWidth;
+            this.bloomFactor = 0;
+        }
+
+        draw() {
+            // Draw stem
+            stroke(0, 110, 51);
+            strokeWeight(8);
+            line(this.x, height, this.x, this.y);
+
+            // Draw petals
+            stroke(255);
+            strokeWeight(0.5);
+            fill(255, 0, 0);
+            translate(this.x, this.y);
+            for (let i = 0; i < this.petalCount; i++) {
+                let angle = (360 / this.petalCount) * i;
+                push();
+                rotate(angle);
+                ellipse(0, this.bloomFactor * this.petalLength, this.petalWidth, this.bloomFactor * this.petalLength);
+                pop();
+            }
+            resetMatrix();
+
+            // Draw flower center
+            fill(255, 204, 0);
+            ellipse(this.x, this.y, this.petalWidth * 2.3, this.petalWidth * 2.3);
+        }
+
+        updateBloom() {
+            if (this.bloomFactor < 1) {
+                this.bloomFactor += bloomSpeed;
+            }
+        }
+    }
+
+    class Heart {
+        constructor(x, y, speed) {
+            this.x = x;
+            this.y = y;
+            this.speed = speed/2;
+            this.size = random(20, 50);
+        }
+
+        update() {
+            this.y -= this.speed;
+        }
+
+        show() {
+            image(heartImg, this.x, this.y, this.size, this.size);
+            if (this.y < -this.size) {
+                hearts.splice(hearts.indexOf(this), 1);
+            }
+        }
+    }
+
+    function displayText() {
+        textSize(24);
+        textAlign(CENTER, CENTER);
+        noStroke();
+
+        // Break the text into lines if it exceeds the maximum width
+        let words = displayedText.split(' ');
+        let lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            let word = words[i];
+            let width = textWidth(currentLine + ' ' + word);
+            if (width < maxWidth) {
+                currentLine += ' ' + word;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        lines.push(currentLine);
+
+        // Draw background for text
+        let textHeight = textSize() * lines.length + 60;
+        fill(0, 0, 0, 80);  // Semi-transparent background
+        rectMode(CENTER);
+        let rectX = width / 2;
+        let rectY = height / 2;
+        let rectWidth = maxWidth + 80;
+        let rectHeight = textHeight;
+        let borderRadius = 20;
+        let paddingTop =20; // Radius for rounded corners
+        rect(rectX, rectY, rectWidth, rectHeight, borderRadius,paddingTop);
+
+        // Draw text
+        fill(255);
+        for (let i = 0; i < lines.length; i++) {
+            text(lines[i], width / 2, height / 2 - textSize() * (lines.length / 2 - i));
+        }
+
+        // Typing effect
+        if (typingFrame % typingSpeed === 0 && typingIndex < typingText.length) {
+            displayedText += typingText.charAt(typingIndex);
+            typingIndex++;
+        }
+        typingFrame++;
+    }
+
+    function windowResized() {
+        resizeCanvas(windowWidth, windowHeight);
+        flowers = []; // Reset flowers array on window resize
+        // Re-create flowers
+        let cols = 4;
+        let rows = 3;
+        let cellWidth = width / cols;
+        let cellHeight = height / rows;
+
+        for (let i = 0; i < cols; i++) {
+            for (let j = 0; j < rows; j++) {
+                let x = i * cellWidth + random(cellWidth * 0.2, cellWidth * 0.8);
+                let y = j * cellHeight + random(cellHeight * 0.2, cellHeight * 0.8);
+                let petalCount = 15;
+                let petalLength = 40;
+                let petalWidth = petalLength / 2;
+                flowers.push(new Flower(x, y, petalCount, petalLength, petalWidth));
+            }
+        }
+    }
+</script>
+</body>
+</html>
